@@ -27,6 +27,7 @@ import org.capnproto.PrimitiveList;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.FloatBuffer;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 
 public class SpectrumPlotSink implements DynamicSink<PrimitiveList.Float.Reader> {
@@ -38,8 +39,8 @@ public class SpectrumPlotSink implements DynamicSink<PrimitiveList.Float.Reader>
 
   private final SpectrumFrame spectrumFrame;
 
-  public SpectrumPlotSink(ChannelHandlerContext context) {
-    spectrumFrame = new SpectrumFrame(DFT_WIDTH, AVERAGING, FRAME_RATE, SAMPLE_QUEUE_SIZE);
+  public SpectrumPlotSink(ExecutorService executor, ChannelHandlerContext context) {
+    spectrumFrame = new SpectrumFrame(executor, DFT_WIDTH, AVERAGING, FRAME_RATE, SAMPLE_QUEUE_SIZE);
 
     spectrumFrame.setSize(300, 300);
     spectrumFrame.setLocationRelativeTo(null);

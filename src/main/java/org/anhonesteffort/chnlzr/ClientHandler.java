@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 
 import static org.anhonesteffort.chnlzr.Proto.BaseMessage;
@@ -34,13 +35,15 @@ public class ClientHandler extends ChannelHandlerAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
 
+  private final ExecutorService       executor;
   private final boolean               hostIsBrkr;
   private final ChannelRequest.Reader request;
 
-  private       Optional<SpectrumPlotSink> channelSink = Optional.empty();
-  private       boolean                    requestSent = false;
+  private Optional<SpectrumPlotSink> channelSink = Optional.empty();
+  private boolean                    requestSent = false;
 
-  public ClientHandler(boolean hostIsBrkr, ChannelRequest.Reader request) {
+  public ClientHandler(ExecutorService executor, boolean hostIsBrkr, ChannelRequest.Reader request) {
+    this.executor   = executor;
     this.hostIsBrkr = hostIsBrkr;
     this.request    = request;
   }
@@ -86,7 +89,7 @@ public class ClientHandler extends ChannelHandlerAdapter {
 
       case CHANNEL_STATE:
         if (!channelSink.isPresent())
-          channelSink = Optional.of(new SpectrumPlotSink(context));
+          channelSink = Optional.of(new SpectrumPlotSink(executor, context));
 
         channelSink.get().onSourceStateChange(
             message.getChannelState().getSampleRate(),

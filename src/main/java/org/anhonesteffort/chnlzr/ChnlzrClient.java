@@ -29,7 +29,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.anhonesteffort.chnlzr.pipeline.BaseMessageDecoder;
 import org.anhonesteffort.chnlzr.pipeline.BaseMessageEncoder;
 import org.anhonesteffort.chnlzr.pipeline.IdleStateHeartbeatWriter;
-import org.anhonesteffort.dsp.ConcurrentSource;
 import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
 import java.util.List;
@@ -107,7 +106,7 @@ public class ChnlzrClient {
                    ch.pipeline().addLast("heartbeat",  IdleStateHeartbeatWriter.INSTANCE);
                    ch.pipeline().addLast("encoder",    BaseMessageEncoder.INSTANCE);
                    ch.pipeline().addLast("decoder",    new BaseMessageDecoder());
-                   ch.pipeline().addLast("handler",    new ClientHandler(hostIsBrkr, channel));
+                   ch.pipeline().addLast("handler",    new ClientHandler(executor, hostIsBrkr, channel));
                  }
                });
 
@@ -127,7 +126,6 @@ public class ChnlzrClient {
     } finally {
       executor.shutdownNow();
       workerGroup.shutdownGracefully();
-      ConcurrentSource.shutdownSources();
       ConcurrencyUtils.shutdownThreadPoolAndAwaitTermination();
     }
   }
