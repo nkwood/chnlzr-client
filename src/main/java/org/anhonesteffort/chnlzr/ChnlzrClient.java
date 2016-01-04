@@ -97,8 +97,8 @@ public class ChnlzrClient {
                .channel(NioSocketChannel.class)
                .option(ChannelOption.SO_KEEPALIVE, true)
                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.connectionTimeoutMs())
-               .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, config.avgByteRate())
-               .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK,  config.avgByteRate() / 4)
+               .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, config.bufferHighWaterMark())
+               .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, config.bufferLowWaterMark())
                .handler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  public void initChannel(SocketChannel ch) {
