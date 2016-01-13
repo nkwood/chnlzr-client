@@ -87,8 +87,6 @@ public class ChnlzrClient {
           if (isBrkrCapable.get(10000, TimeUnit.MILLISECONDS)) {
             capableBrkr = Optional.of(brkrHost);
             break;
-          } else {
-            isBrkrCapable.cancel(true);
           }
         }
       }
