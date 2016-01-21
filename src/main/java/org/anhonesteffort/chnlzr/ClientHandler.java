@@ -99,7 +99,7 @@ public class ClientHandler extends ChannelHandlerAdapter {
 
       case SAMPLES:
         if (channelSink.isPresent())
-          channelSink.get().consume(message.getSamples().getSamples());
+          channelSink.get().consume(message.getSamples().getSamples().asByteBuffer());
         else {
           log.warn("received samples before channel state, closing");
           context.close();

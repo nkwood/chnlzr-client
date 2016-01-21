@@ -22,15 +22,13 @@ import org.anhonesteffort.dsp.dft.DftWidth;
 import org.anhonesteffort.dsp.plot.SpectrumFrame;
 import org.anhonesteffort.dsp.sample.DynamicSink;
 import org.anhonesteffort.dsp.sample.Samples;
-import org.capnproto.PrimitiveList;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.nio.FloatBuffer;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.IntStream;
 
-public class SpectrumPlotSink implements DynamicSink<PrimitiveList.Float.Reader> {
+public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
 
   private static final DftWidth DFT_WIDTH         = DftWidth.DFT_4096;
   private static final int      AVERAGING         = 20;
@@ -65,13 +63,8 @@ public class SpectrumPlotSink implements DynamicSink<PrimitiveList.Float.Reader>
   }
 
   @Override
-  public void consume(PrimitiveList.Float.Reader samples) {
-    FloatBuffer buffer = FloatBuffer.allocate(samples.size());
-
-    IntStream.range(0, samples.size())
-             .forEach(i -> buffer.put(samples.get(i)));
-
-    spectrumFrame.consume(new Samples(buffer));
+  public void consume(ByteBuffer samples) {
+    spectrumFrame.consume(new Samples(samples.asFloatBuffer()));
   }
 
 }
