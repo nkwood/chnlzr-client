@@ -96,8 +96,7 @@ public class BrkrHostsLookup implements Callable<List<HostId.Reader>> {
 
     @Override
     public void channelActive(ChannelHandlerContext context) {
-      context.writeAndFlush(CapnpUtil.getBrkrList())
-             .addListener(new CloseOnFutureErrorListener(log, "write of GET_BRKR_LIST message failed"));
+      context.writeAndFlush(CapnpUtil.getBrkrList());
     }
 
     @Override
