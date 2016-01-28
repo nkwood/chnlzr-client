@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (C) 2015 An Honest Effort LLC, coping.
+  ~ Copyright (C) 2016 An Honest Effort LLC.
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
     <groupId>org.anhonesteffort.chnlzr</groupId>
     <artifactId>chnlzr-client</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 
     <repositories>
         <repository>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.anhonesteffort.chnlzr</groupId>
             <artifactId>chnlzr-common</artifactId>
-            <version>0.2.0</version>
+            <version>0.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -33,22 +33,17 @@ public class ClientHandler extends ChannelHandlerAdapter {
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
 
   private final ExecutorService       executor;
-  private final boolean               hostIsBrkr;
   private final ChannelRequest.Reader request;
+  private Optional<SpectrumPlotSink>  channelSink = Optional.empty();
 
-  private Optional<SpectrumPlotSink> channelSink = Optional.empty();
-  private boolean                    requestSent = false;
-
-  public ClientHandler(ExecutorService executor, boolean hostIsBrkr, ChannelRequest.Reader request) {
-    this.executor   = executor;
-    this.hostIsBrkr = hostIsBrkr;
-    this.request    = request;
+  public ClientHandler(ExecutorService executor, ChannelRequest.Reader request) {
+    this.executor = executor;
+    this.request  = request;
   }
 
   @Override
   public void channelActive(ChannelHandlerContext context) {
-    if (!hostIsBrkr)
-      context.writeAndFlush(CapnpUtil.channelRequest(request));
+    context.writeAndFlush(CapnpUtil.channelRequest(request));
   }
 
   @Override
@@ -61,18 +56,10 @@ public class ClientHandler extends ChannelHandlerAdapter {
         context.close();
         break;
 
-      case BRKR_STATE:
-        if (!hostIsBrkr || requestSent) {
-          break;
-        }
-
-        context.writeAndFlush(CapnpUtil.channelRequest(request));
-        requestSent = true;
-        break;
-
       case CHANNEL_STATE:
-        if (!channelSink.isPresent())
+        if (!channelSink.isPresent()) {
           channelSink = Optional.of(new SpectrumPlotSink(executor, context));
+        }
 
         channelSink.get().onSourceStateChange(
             message.getChannelState().getSampleRate(),
@@ -81,10 +68,10 @@ public class ClientHandler extends ChannelHandlerAdapter {
         break;
 
       case SAMPLES:
-        if (channelSink.isPresent())
+        if (channelSink.isPresent()) {
           channelSink.get().consume(message.getSamples().getSamples().asByteBuffer());
-        else {
-          log.warn("received samples before channel state, closing");
+        } else {
+          log.error("received samples before channel state, closing");
           context.close();
         }
         break;

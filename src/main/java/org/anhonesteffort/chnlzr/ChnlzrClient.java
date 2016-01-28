@@ -31,65 +31,39 @@ import org.anhonesteffort.chnlzr.pipeline.BaseMessageEncoder;
 import org.anhonesteffort.chnlzr.pipeline.IdleStateHeartbeatWriter;
 import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.anhonesteffort.chnlzr.Proto.ChannelRequest;
-import static org.anhonesteffort.chnlzr.Proto.HostId;
 
 public class ChnlzrClient {
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   private final ChnlzrConfig          config;
-  private final boolean               hostIsBrkr;
   private final String                hostname;
   private final int                   hostPort;
-  private final ChannelRequest.Reader channel;
+  private final ChannelRequest.Reader request;
 
   public ChnlzrClient(ChnlzrConfig          config,
-                      boolean               hostIsBrkr,
                       String                hostname,
                       int                   hostPort,
-                      ChannelRequest.Reader channel)
+                      ChannelRequest.Reader request)
   {
-    this.config     = config;
-    this.hostIsBrkr = hostIsBrkr;
-    this.hostname   = hostname;
-    this.hostPort   = hostPort;
-    this.channel    = channel;
+    this.config   = config;
+    this.hostname = hostname;
+    this.hostPort = hostPort;
+    this.request  = request;
   }
 
   public void run() throws InterruptedException, TimeoutException, ExecutionException {
-    EventLoopGroup          workerGroup   = new NioEventLoopGroup();
-    Bootstrap               bootstrap     = new Bootstrap();
-    Optional<HostId.Reader> capableBrkr   = Optional.empty();
-    Optional<ChannelFuture> channelFuture = Optional.empty();
+    EventLoopGroup workerGroup = new NioEventLoopGroup();
+    Bootstrap      bootstrap   = new Bootstrap();
 
     try {
-
-      if (hostIsBrkr) {
-        Future<List<HostId.Reader>> brkrHosts = executor.submit(
-            new BrkrHostsLookup(config, workerGroup, hostname, hostPort)
-        );
-
-        for (HostId.Reader brkrHost : brkrHosts.get(10000, TimeUnit.MILLISECONDS)) {
-          Future<Boolean> isBrkrCapable = executor.submit(
-              new CapableBrkrQuery(config, workerGroup, brkrHost, channel)
-          );
-
-          if (isBrkrCapable.get(10000, TimeUnit.MILLISECONDS)) {
-            capableBrkr = Optional.of(brkrHost);
-            break;
-          }
-        }
-      }
 
       bootstrap.group(workerGroup)
                .channel(NioSocketChannel.class)
@@ -104,22 +78,12 @@ public class ChnlzrClient {
                    ch.pipeline().addLast("heartbeat",  IdleStateHeartbeatWriter.INSTANCE);
                    ch.pipeline().addLast("encoder",    BaseMessageEncoder.INSTANCE);
                    ch.pipeline().addLast("decoder",    new BaseMessageDecoder());
-                   ch.pipeline().addLast("handler",    new ClientHandler(executor, hostIsBrkr, channel));
+                   ch.pipeline().addLast("handler",    new ClientHandler(executor, request));
                  }
                });
 
-      if (hostIsBrkr && !capableBrkr.isPresent()) {
-        System.out.println("no available channel brokers are capable of serving request");
-      } else if (hostIsBrkr) {
-        channelFuture = Optional.of(bootstrap.connect(
-            capableBrkr.get().getHostname().toString(), capableBrkr.get().getPort()
-        ).sync());
-      } else {
-        channelFuture = Optional.of(bootstrap.connect(hostname, hostPort).sync());
-      }
-
-      if (channelFuture.isPresent())
-        channelFuture.get().channel().closeFuture().sync();
+      ChannelFuture channelFuture = bootstrap.connect(hostname, hostPort).sync();
+      channelFuture.channel().closeFuture().sync();
 
     } finally {
       executor.shutdownNow();
@@ -130,18 +94,17 @@ public class ChnlzrClient {
 
   public static void main(String[] args) throws Exception {
     if (args.length != 4) {
-      System.out.println("java -jar idk.jar <host uri> <frequency> <bandwidth> <sample rate>");
-      System.out.println("host uri = chnlzr://localhost:8080 | brkr://localhost:9090");
+      System.out.println("$ ./run-client.sh <host uri> <frequency> <bandwidth> <sample rate>");
+      System.out.println("host uri = chnlzr://localhost:7070");
       System.exit(1);
     }
 
-    boolean hostIsBrkr = args[0].startsWith("brkr");
-    String  hostname   = args[0].split("://")[1].split(":")[0];
-    int     port       = Integer.parseInt(args[0].split("://")[1].split(":")[1]);
+    String hostname = args[0].split("://")[1].split(":")[0];
+    int    port     = Integer.parseInt(args[0].split("://")[1].split(":")[1]);
 
     new ChnlzrClient(
         new ChnlzrConfig(),
-        hostIsBrkr, hostname, port,
+        hostname, port,
         CapnpUtil.channelRequest(
             0d, 0d, 0d, 0,
             Double.parseDouble(args[1]),
