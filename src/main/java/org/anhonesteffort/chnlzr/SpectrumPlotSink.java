@@ -18,15 +18,18 @@
 package org.anhonesteffort.chnlzr;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.anhonesteffort.dsp.ComplexNumber;
 import org.anhonesteffort.dsp.dft.DftWidth;
 import org.anhonesteffort.dsp.plot.SpectrumFrame;
-import org.anhonesteffort.dsp.sample.DynamicSink;
+import org.anhonesteffort.dsp.DynamicSink;
 import org.anhonesteffort.dsp.sample.Samples;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.IntStream;
 
 public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
 
@@ -63,8 +66,15 @@ public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
   }
 
   @Override
-  public void consume(ByteBuffer samples) {
-    spectrumFrame.consume(new Samples(samples.asFloatBuffer()));
+  public void consume(ByteBuffer bytes) {
+    FloatBuffer     floats  = bytes.asFloatBuffer();
+    ComplexNumber[] samples = new ComplexNumber[floats.limit() / 2];
+
+    IntStream.range(0, samples.length).forEach(i ->
+      samples[i] = new ComplexNumber(floats.get(i * 2), floats.get((i * 2) + 1))
+    );
+
+    spectrumFrame.consume(new Samples(samples));
   }
 
 }
