@@ -29,7 +29,6 @@ import java.awt.event.WindowEvent;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.IntStream;
 
 public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
 
@@ -70,9 +69,9 @@ public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
     FloatBuffer     floats  = bytes.asFloatBuffer();
     ComplexNumber[] samples = new ComplexNumber[floats.limit() / 2];
 
-    IntStream.range(0, samples.length).forEach(i ->
-      samples[i] = new ComplexNumber(floats.get(i * 2), floats.get((i * 2) + 1))
-    );
+    for (int i = 0; i < samples.length; i++) {
+      samples[i] = new ComplexNumber(floats.get(i * 2), floats.get((i * 2) + 1));
+    }
 
     spectrumFrame.consume(new Samples(samples));
   }
