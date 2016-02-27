@@ -29,6 +29,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.anhonesteffort.chnlzr.pipeline.BaseMessageDecoder;
 import org.anhonesteffort.chnlzr.pipeline.BaseMessageEncoder;
 import org.anhonesteffort.chnlzr.pipeline.IdleStateHeartbeatWriter;
+import org.capnproto.MessageBuilder;
 import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
 import java.util.concurrent.ExecutionException;
@@ -37,21 +38,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.anhonesteffort.chnlzr.Proto.ChannelRequest;
-
 public class ChnlzrClient {
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-  private final ChnlzrConfig          config;
-  private final String                hostname;
-  private final int                   hostPort;
-  private final ChannelRequest.Reader request;
+  private final ChnlzrConfig   config;
+  private final String         hostname;
+  private final int            hostPort;
+  private final MessageBuilder request;
 
-  public ChnlzrClient(ChnlzrConfig          config,
-                      String                hostname,
-                      int                   hostPort,
-                      ChannelRequest.Reader request)
+  public ChnlzrClient(ChnlzrConfig   config,
+                      String         hostname,
+                      int            hostPort,
+                      MessageBuilder request)
   {
     this.config   = config;
     this.hostname = hostname;
@@ -105,8 +104,8 @@ public class ChnlzrClient {
     new ChnlzrClient(
         new ChnlzrConfig(),
         hostname, port,
-        CapnpUtil.channelRequest(
-            0d, 0d, 0d, 0,
+        CapnpUtil.request(
+            0,
             Double.parseDouble(args[1]),
             Double.parseDouble(args[2]),
             Long.parseLong(args[3]),

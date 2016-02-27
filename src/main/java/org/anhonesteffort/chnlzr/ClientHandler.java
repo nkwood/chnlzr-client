@@ -19,6 +19,7 @@ package org.anhonesteffort.chnlzr;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import org.capnproto.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,34 +27,36 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 import static org.anhonesteffort.chnlzr.Proto.BaseMessage;
-import static org.anhonesteffort.chnlzr.Proto.ChannelRequest;
 
 public class ClientHandler extends ChannelHandlerAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
 
-  private final ExecutorService       executor;
-  private final ChannelRequest.Reader request;
+  private final ExecutorService executor;
+  private final MessageBuilder request;
   private Optional<SpectrumPlotSink>  channelSink = Optional.empty();
 
-  public ClientHandler(ExecutorService executor, ChannelRequest.Reader request) {
+  public ClientHandler(ExecutorService executor, MessageBuilder request) {
     this.executor = executor;
     this.request  = request;
   }
 
   @Override
   public void channelActive(ChannelHandlerContext context) {
-    context.writeAndFlush(CapnpUtil.channelRequest(request));
+    context.writeAndFlush(request);
   }
 
   @Override
   public void channelRead(ChannelHandlerContext context, Object response) {
     BaseMessage.Reader message = (BaseMessage.Reader) response;
 
+    log.info("RECEIVED -> " + message.getType());
     switch (message.getType()) {
-      case ERROR:
-        log.error("error code: " + message.getError().getCode());
-        context.close();
+      case CHANNEL_RESPONSE:
+        if (message.getChannelResponse().getError() != 0x00) {
+          log.error("error code: " + message.getChannelResponse().getError());
+          context.close();
+        }
         break;
 
       case CHANNEL_STATE:
