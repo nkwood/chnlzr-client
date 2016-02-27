@@ -50,7 +50,6 @@ public class ClientHandler extends ChannelHandlerAdapter {
   public void channelRead(ChannelHandlerContext context, Object response) {
     BaseMessage.Reader message = (BaseMessage.Reader) response;
 
-    log.info("RECEIVED -> " + message.getType());
     switch (message.getType()) {
       case CHANNEL_RESPONSE:
         if (message.getChannelResponse().getError() != 0x00) {
