@@ -26,41 +26,52 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.anhonesteffort.chnlzr.pipeline.BaseMessageDecoder;
-import org.anhonesteffort.chnlzr.pipeline.BaseMessageEncoder;
-import org.anhonesteffort.chnlzr.pipeline.IdleStateHeartbeatWriter;
+import org.anhonesteffort.chnlzr.capnp.CapnpUtil;
+import org.anhonesteffort.chnlzr.capnp.BaseMessageDecoder;
+import org.anhonesteffort.chnlzr.capnp.BaseMessageEncoder;
+import org.anhonesteffort.chnlzr.netty.IdleStateHeartbeatWriter;
 import org.capnproto.MessageBuilder;
 import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class ChnlzrClient {
 
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
   private final ChnlzrConfig   config;
-  private final String         hostname;
-  private final int            hostPort;
+  private final String         tcpHostname;
+  private final int            tcpHostPort;
+  private final String         multicastAddress;
+  private final int            multicastPort;
   private final MessageBuilder request;
 
   public ChnlzrClient(ChnlzrConfig   config,
-                      String         hostname,
-                      int            hostPort,
+                      String         tcpHostname,
+                      int            tcpHostPort,
+                      String         multicastAddress,
+                      int            multicastPort,
                       MessageBuilder request)
   {
-    this.config   = config;
-    this.hostname = hostname;
-    this.hostPort = hostPort;
-    this.request  = request;
+    this.config           = config;
+    this.tcpHostname      = tcpHostname;
+    this.tcpHostPort      = tcpHostPort;
+    this.multicastAddress = multicastAddress;
+    this.multicastPort    = multicastPort;
+    this.request          = request;
   }
 
-  public void run() throws InterruptedException, TimeoutException, ExecutionException {
-    EventLoopGroup workerGroup = new NioEventLoopGroup();
-    Bootstrap      bootstrap   = new Bootstrap();
+  public void run() throws IOException, ExecutionException, InterruptedException {
+    final MulticastSource samplesIn     = new MulticastSource(multicastAddress, multicastPort);
+    final Future          samplesFuture = executor.submit(samplesIn);
+
+    final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    final Bootstrap      bootstrap   = new Bootstrap();
 
     try {
 
@@ -68,8 +79,6 @@ public class ChnlzrClient {
                .channel(NioSocketChannel.class)
                .option(ChannelOption.SO_KEEPALIVE, true)
                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.connectionTimeoutMs())
-               .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, config.bufferHighWaterMark())
-               .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, config.bufferLowWaterMark())
                .handler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  public void initChannel(SocketChannel ch) {
@@ -77,14 +86,15 @@ public class ChnlzrClient {
                    ch.pipeline().addLast("heartbeat",  IdleStateHeartbeatWriter.INSTANCE);
                    ch.pipeline().addLast("encoder",    BaseMessageEncoder.INSTANCE);
                    ch.pipeline().addLast("decoder",    new BaseMessageDecoder());
-                   ch.pipeline().addLast("handler",    new ClientHandler(executor, request));
+                   ch.pipeline().addLast("handler",    new ClientHandler(executor, request, samplesIn));
                  }
                });
 
-      ChannelFuture channelFuture = bootstrap.connect(hostname, hostPort).sync();
+      ChannelFuture channelFuture = bootstrap.connect(tcpHostname, tcpHostPort).sync();
       channelFuture.channel().closeFuture().sync();
 
     } finally {
+      samplesFuture.cancel(true);
       executor.shutdownNow();
       workerGroup.shutdownGracefully();
       ConcurrencyUtils.shutdownThreadPoolAndAwaitTermination();
@@ -92,23 +102,26 @@ public class ChnlzrClient {
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 4) {
-      System.out.println("$ ./run-client.sh <host uri> <frequency> <bandwidth> <sample rate>");
-      System.out.println("host uri = chnlzr://localhost:7070");
+    if (args.length != 5) {
+      System.out.println("$ ./run-client.sh <tcp uri> <udp uri> <frequency> <bandwidth> <sample rate>");
+      System.out.println("tcp uri = localhost:7070");
+      System.out.println("udp uri = 239.255.20.20:6644");
       System.exit(1);
     }
 
-    String hostname = args[0].split("://")[1].split(":")[0];
-    int    port     = Integer.parseInt(args[0].split("://")[1].split(":")[1]);
+    String tcpHost    = args[0].split(":")[0];
+    int    tcpPort    = Integer.parseInt(args[0].split(":")[1]);
+    String udpAddress = args[1].split(":")[0];
+    int    udpPort    = Integer.parseInt(args[1].split(":")[1]);
 
     new ChnlzrClient(
         new ChnlzrConfig(),
-        hostname, port,
+        tcpHost, tcpPort, udpAddress, udpPort,
         CapnpUtil.request(
             0,
-            Double.parseDouble(args[1]),
             Double.parseDouble(args[2]),
-            Long.parseLong(args[3]),
+            Double.parseDouble(args[3]),
+            Long.parseLong(args[4]),
             150l
         )
     ).run();

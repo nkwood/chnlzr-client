@@ -18,7 +18,7 @@
 package org.anhonesteffort.chnlzr;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.anhonesteffort.dsp.ComplexNumber;
+import org.anhonesteffort.chnlzr.udp.ChannelSamples;
 import org.anhonesteffort.dsp.dft.DftWidth;
 import org.anhonesteffort.dsp.plot.SpectrumFrame;
 import org.anhonesteffort.dsp.DynamicSink;
@@ -26,21 +26,21 @@ import org.anhonesteffort.dsp.sample.Samples;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
 
-public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
+public class SpectrumPlotSink implements DynamicSink<ChannelSamples> {
 
   private static final DftWidth DFT_WIDTH         = DftWidth.DFT_4096;
   private static final int      AVERAGING         = 20;
   private static final int      FRAME_RATE        = 25;
   private static final int      SAMPLE_QUEUE_SIZE = 15;
 
+  private final long channelId;
   private final SpectrumFrame spectrumFrame;
 
-  public SpectrumPlotSink(ExecutorService executor, ChannelHandlerContext context) {
-    spectrumFrame = new SpectrumFrame(executor, DFT_WIDTH, AVERAGING, FRAME_RATE, SAMPLE_QUEUE_SIZE);
+  public SpectrumPlotSink(ExecutorService executor, ChannelHandlerContext context, long channelId) {
+    this.channelId = channelId;
+    spectrumFrame  = new SpectrumFrame(executor, DFT_WIDTH, AVERAGING, FRAME_RATE, SAMPLE_QUEUE_SIZE);
 
     spectrumFrame.setSize(300, 300);
     spectrumFrame.setLocationRelativeTo(null);
@@ -65,15 +65,10 @@ public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
   }
 
   @Override
-  public void consume(ByteBuffer bytes) {
-    FloatBuffer     floats  = bytes.asFloatBuffer();
-    ComplexNumber[] samples = new ComplexNumber[floats.limit() / 2];
-
-    for (int i = 0; i < samples.length; i++) {
-      samples[i] = new ComplexNumber(floats.get(i * 2), floats.get((i * 2) + 1));
+  public void consume(ChannelSamples samples) {
+    if (samples.getChannelId() == channelId) {
+      spectrumFrame.consume(new Samples(samples.getSamples()));
     }
-
-    spectrumFrame.consume(new Samples(samples));
   }
 
 }

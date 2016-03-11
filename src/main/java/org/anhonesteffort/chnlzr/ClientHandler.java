@@ -26,19 +26,22 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-import static org.anhonesteffort.chnlzr.Proto.BaseMessage;
+import static org.anhonesteffort.chnlzr.capnp.Proto.BaseMessage;
 
 public class ClientHandler extends ChannelHandlerAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
 
   private final ExecutorService executor;
-  private final MessageBuilder request;
-  private Optional<SpectrumPlotSink>  channelSink = Optional.empty();
+  private final MessageBuilder  request;
+  private final MulticastSource samples;
 
-  public ClientHandler(ExecutorService executor, MessageBuilder request) {
+  private Optional<SpectrumPlotSink> channelSink = Optional.empty();
+
+  public ClientHandler(ExecutorService executor, MessageBuilder request, MulticastSource samples) {
     this.executor = executor;
     this.request  = request;
+    this.samples  = samples;
   }
 
   @Override
@@ -55,27 +58,19 @@ public class ClientHandler extends ChannelHandlerAdapter {
         if (message.getChannelResponse().getError() != 0x00) {
           log.error("error code: " + message.getChannelResponse().getError());
           context.close();
+        } else {
+          channelSink = Optional.of(new SpectrumPlotSink(
+              executor, context, message.getChannelResponse().getChannelId()
+          ));
+          samples.addSink(channelSink.get());
         }
         break;
 
       case CHANNEL_STATE:
-        if (!channelSink.isPresent()) {
-          channelSink = Optional.of(new SpectrumPlotSink(executor, context));
-        }
-
         channelSink.get().onSourceStateChange(
             message.getChannelState().getSampleRate(),
             message.getChannelState().getCenterFrequency()
         );
-        break;
-
-      case SAMPLES:
-        if (channelSink.isPresent()) {
-          channelSink.get().consume(message.getSamples().getSamples().asByteBuffer());
-        } else {
-          log.error("received samples before channel state, closing");
-          context.close();
-        }
         break;
 
       case CAPABILITIES:
@@ -89,7 +84,11 @@ public class ClientHandler extends ChannelHandlerAdapter {
 
   @Override
   public void channelInactive(ChannelHandlerContext context) {
-    channelSink = Optional.empty();
+    if (channelSink.isPresent()) {
+      samples.removeSink(channelSink.get());
+    } else {
+      channelSink = Optional.empty();
+    }
   }
 
 }
