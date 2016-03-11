@@ -67,7 +67,7 @@ public class ChnlzrClient {
   }
 
   public void run() throws IOException, ExecutionException, InterruptedException {
-    final MulticastSource samplesIn     = new MulticastSource(multicastAddress, multicastPort);
+    final MulticastSource samplesIn     = new MulticastSource(multicastAddress, multicastPort, config.samplesPerMessage());
     final Future          samplesFuture = executor.submit(samplesIn);
 
     final EventLoopGroup workerGroup = new NioEventLoopGroup();

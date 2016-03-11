@@ -36,8 +36,10 @@ public class MulticastSource extends ConcurrentSource<ChannelSamples, Sink<Chann
   private final SamplesDatagramDecoder decoder = new SamplesDatagramDecoder();
   private final MulticastSocket socket;
   private final InetAddress address;
+  private final int buffSize;
 
-  public MulticastSource(String address, int port) throws IOException {
+  public MulticastSource(String address, int port, int samplesPerMessage) throws IOException {
+    buffSize     = (samplesPerMessage * 2 * 4) + 8;
     this.address = InetAddress.getByName(address);
     socket       = new MulticastSocket(port);
 
@@ -49,7 +51,7 @@ public class MulticastSource extends ConcurrentSource<ChannelSamples, Sink<Chann
     try {
 
       while (true) {
-        DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
+        DatagramPacket packet = new DatagramPacket(new byte[buffSize], buffSize);
         socket.receive(packet);
 
         ChannelSamples samples = decoder.decode(packet);
