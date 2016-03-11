@@ -94,6 +94,7 @@ public class ChnlzrClient {
       channelFuture.channel().closeFuture().sync();
 
     } finally {
+      samplesIn.close();
       samplesFuture.cancel(true);
       executor.shutdownNow();
       workerGroup.shutdownGracefully();

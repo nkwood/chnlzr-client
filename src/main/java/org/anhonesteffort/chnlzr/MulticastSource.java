@@ -46,11 +46,15 @@ public class MulticastSource extends ConcurrentSource<ChannelSamples, Sink<Chann
     socket.joinGroup(this.address);
   }
 
+  public void close() {
+    socket.close();
+  }
+
   @Override
   public Void call() throws IOException {
     try {
 
-      while (true) {
+      while (!Thread.interrupted()) {
         DatagramPacket packet = new DatagramPacket(new byte[buffSize], buffSize);
         socket.receive(packet);
 
@@ -59,7 +63,9 @@ public class MulticastSource extends ConcurrentSource<ChannelSamples, Sink<Chann
       }
 
     } catch (IOException e) {
-      log.error("multicast socket error", e);
+      if (!socket.isClosed()) {
+        log.error("multicast socket error", e);
+      }
     } finally {
       socket.leaveGroup(address);
       socket.close();
