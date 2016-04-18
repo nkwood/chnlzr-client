@@ -19,18 +19,20 @@ package org.anhonesteffort.chnlzr;
 
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import org.anhonesteffort.chnlzr.capnp.ProtoFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-import static org.anhonesteffort.chnlzr.Proto.BaseMessage;
-import static org.anhonesteffort.chnlzr.Proto.ChannelRequest;
+import static org.anhonesteffort.chnlzr.capnp.Proto.BaseMessage;
+import static org.anhonesteffort.chnlzr.capnp.Proto.ChannelRequest;
 
 public class ClientHandler extends ChannelHandlerAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
+  private final ProtoFactory proto = new ProtoFactory();
 
   private final ExecutorService       executor;
   private final ChannelRequest.Reader request;
@@ -43,7 +45,7 @@ public class ClientHandler extends ChannelHandlerAdapter {
 
   @Override
   public void channelActive(ChannelHandlerContext context) {
-    context.writeAndFlush(CapnpUtil.channelRequest(request));
+    context.writeAndFlush(proto.channelRequest(request));
   }
 
   @Override

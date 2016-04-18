@@ -26,9 +26,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.anhonesteffort.chnlzr.pipeline.BaseMessageDecoder;
-import org.anhonesteffort.chnlzr.pipeline.BaseMessageEncoder;
-import org.anhonesteffort.chnlzr.pipeline.IdleStateHeartbeatWriter;
+import org.anhonesteffort.chnlzr.capnp.BaseMessageDecoder;
+import org.anhonesteffort.chnlzr.capnp.BaseMessageEncoder;
+import org.anhonesteffort.chnlzr.capnp.ProtoFactory;
+import org.anhonesteffort.chnlzr.netty.IdleStateHeartbeatWriter;
 import pl.edu.icm.jlargearrays.ConcurrencyUtils;
 
 import java.util.concurrent.ExecutionException;
@@ -37,7 +38,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.anhonesteffort.chnlzr.Proto.ChannelRequest;
+import static org.anhonesteffort.chnlzr.capnp.Proto.ChannelRequest;
 
 public class ChnlzrClient {
 
@@ -105,8 +106,7 @@ public class ChnlzrClient {
     new ChnlzrClient(
         new ChnlzrConfig(),
         hostname, port,
-        CapnpUtil.channelRequest(
-            0d, 0d, 0d, 0,
+        new ProtoFactory().channelRequest(
             Double.parseDouble(args[1]),
             Double.parseDouble(args[2]),
             Long.parseLong(args[3]),
