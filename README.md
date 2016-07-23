@@ -1,6 +1,6 @@
 # chnlzr-client
 
-example client for chnlzr.
+Example [chnlzr-server](https://github.com/radiowitness/chnlzr-server) client implementation.
 
 ## Create chnlzr.properties
 Copy `example-chnlzr.properties` to `chnlzr.properties` and modify as you see fit.
