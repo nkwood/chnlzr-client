@@ -1,5 +1,4 @@
 # chnlzr-client
-
 Example [chnlzr-server](https://github.com/radiowitness/chnlzr-server) client implementation.
 
 ## Create chnlzr.properties
@@ -16,7 +15,5 @@ $ ./run-client.sh chnlzr://localhost:7070 600000 12500 48000
 ```
 
 ## License
-
 Copyright 2016 An Honest Effort LLC
-
 Licensed under the GPLv3: http://www.gnu.org/licenses/gpl-3.0.html

@@ -25,7 +25,7 @@
 
     <groupId>org.anhonesteffort.chnlzr</groupId>
     <artifactId>chnlzr-client</artifactId>
-    <version>0.4.0</version>
+    <version>1.0</version>
 
     <repositories>
         <repository>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.anhonesteffort.chnlzr</groupId>
             <artifactId>chnlzr-common</artifactId>
-            <version>0.4.0</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

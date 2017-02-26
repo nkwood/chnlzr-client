@@ -91,6 +91,8 @@ public class ChnlzrClient {
       workerGroup.shutdownGracefully();
       ConcurrencyUtils.shutdownThreadPoolAndAwaitTermination();
     }
+
+    System.exit(0);
   }
 
   public static void main(String[] args) throws Exception {

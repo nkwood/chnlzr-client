@@ -17,8 +17,8 @@
 
 package org.anhonesteffort.chnlzr;
 
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.anhonesteffort.chnlzr.capnp.ProtoFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import static org.anhonesteffort.chnlzr.capnp.Proto.BaseMessage;
 import static org.anhonesteffort.chnlzr.capnp.Proto.ChannelRequest;
 
-public class ClientHandler extends ChannelHandlerAdapter {
+public class ClientHandler extends ChannelInboundHandlerAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
   private final ProtoFactory proto = new ProtoFactory();
@@ -63,7 +63,7 @@ public class ClientHandler extends ChannelHandlerAdapter {
           channelSink = Optional.of(new SpectrumPlotSink(executor, context));
         }
 
-        channelSink.get().onSourceStateChange(
+        channelSink.get().onStateChange(
             message.getChannelState().getSampleRate(),
             message.getChannelState().getCenterFrequency()
         );

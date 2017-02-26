@@ -18,11 +18,11 @@
 package org.anhonesteffort.chnlzr;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.anhonesteffort.dsp.ComplexNumber;
+import org.anhonesteffort.dsp.StatefulSink;
 import org.anhonesteffort.dsp.dft.DftWidth;
 import org.anhonesteffort.dsp.plot.SpectrumFrame;
-import org.anhonesteffort.dsp.DynamicSink;
 import org.anhonesteffort.dsp.sample.Samples;
+import org.anhonesteffort.dsp.util.ComplexNumber;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
 
-public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
+public class SpectrumPlotSink implements StatefulSink<ByteBuffer> {
 
   private static final DftWidth DFT_WIDTH         = DftWidth.DFT_4096;
   private static final int      AVERAGING         = 20;
@@ -59,9 +59,9 @@ public class SpectrumPlotSink implements DynamicSink<ByteBuffer> {
   }
 
   @Override
-  public void onSourceStateChange(Long sampleRate, Double frequency) {
+  public void onStateChange(long sampleRate, double frequency) {
     spectrumFrame.setTitle("channel: " + frequency + "Hz @ " + sampleRate + "sps");
-    spectrumFrame.onSourceStateChange(sampleRate, frequency);
+    spectrumFrame.onStateChange(sampleRate, frequency);
   }
 
   @Override
